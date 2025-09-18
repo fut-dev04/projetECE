@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 
 // Middleware pour lire du JSON dans le body
-// ⚠ c'est ça qui permet d'avoir req.body défini
+// c'est ça qui permet d'avoir req.body défini
 app.use(bodyParser.json());
 
 // Importer les routes
@@ -17,7 +17,7 @@ app.use('/route', demandesRoutes);
 
 // Petit test pour la racine
 app.get('/', (req, res) => {
-  res.send('API fonctionne 🚀');
+  res.send('API fonctionne ');
 });
 
 module.exports = app;
