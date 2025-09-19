@@ -1,6 +1,14 @@
+// POST -->ajouter une demande
+// GET--> voir toutes les demandes 
+//GET/:id--> voir une demande precise
+//PUT/:id-->modifier une demande
+// DELETE/:id-->supprimer une demande
+
 const express = require('express');
 const router = express.Router();
 const Model=require('../models/model');
+
+const {io}=require('../serveur');
 
 let tableauDemandes = [];
 let idCounter = 1;
@@ -25,6 +33,7 @@ router.post('/', (req, res) => {              // route post me permet de creer u
   );
 
   tableauDemandes.push(nouvelleDemande);
+  io.emit('nouvelleDemande',nouvelleDemande);
   res.status(201).json(nouvelleDemande);
 });
 
