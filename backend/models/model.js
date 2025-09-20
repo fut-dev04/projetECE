@@ -1,8 +1,8 @@
 class Model{
-    constructor(id,nom,prenom,sexe,handicap,type){
+    constructor(id,prenom,nom,sexe,handicap,type){
         this.id=id;
-        this.nom=nom;
         this.prenom=prenom;
+        this.nom=nom;
         this.sexe=sexe;
         this.handicap=handicap;
         this.type=type;

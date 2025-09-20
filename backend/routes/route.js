@@ -8,7 +8,6 @@ const express = require('express');
 const router = express.Router();
 const Model=require('../models/model');
 
-const {io}=require('../serveur');
 
 let tableauDemandes = [];
 let idCounter = 1;
@@ -33,6 +32,7 @@ router.post('/', (req, res) => {              // route post me permet de creer u
   );
 
   tableauDemandes.push(nouvelleDemande);
+  const io=req.app.get('io');
   io.emit('nouvelleDemande',nouvelleDemande);
   res.status(201).json(nouvelleDemande);
 });
@@ -43,7 +43,7 @@ router.get('/', (req, res) => {        //route get me permet de recuperer les de
 
 router.get('/:id',(req,res)=>{   //cette route nous permet de recuperer une demande par son id
   const recupererId=parseInt(req.params.id);
-  const chercherId=tableauDemandes.find(x=>x.id===id);
+  const chercherId=tableauDemandes.find(x=>x.id===recupererId);
   if(chercherId){
     res.json(chercherId);
   }else{
@@ -75,7 +75,7 @@ router.delete('/:id',(req,res)=>{
   const id=parseInt(req.params.id);
   const chercherId=tableauDemandes.find(x=>x.id===id);
   if(!chercherId){
-    return res.status(404).json({messaage:'Demande non trouvée'});
+    return res.status(404).json({message:'Demande non trouvée'});
   }
   tableauDemandes=tableauDemandes.filter(x=>x.id !==id); 
   res.json(chercherId);     

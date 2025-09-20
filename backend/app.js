@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 
-// Middleware pour autoriser toutes les origines (frontend ↔ backend)
+// Middleware pour autoriser toutes les origines (frontend <-> backend)
 app.use(cors());
 
 // Middleware pour lire du JSON dans le body
@@ -12,12 +13,12 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Importer les routes
-const demandesRoutes = require('./routes/route'); // ton fichier est route.js dans routes/
+const demandesRoutes = require('./routes/route'); 
 app.use('/route', demandesRoutes);
 
-// Petit test pour la racine
-app.get('/', (req, res) => {
-  res.send('API fonctionne ');
+app.use(express.static(path.join(__dirname, '../frontend')));
+app.get(/.*/,(req,res)=>{
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 module.exports = app;
