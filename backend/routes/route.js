@@ -7,12 +7,14 @@
 const express = require('express');
 const router = express.Router();
 const Model=require('../models/model');
+const authMiddleware=require("../middlewares/middlewareConnexion");
+
 
 
 let tableauDemandes = [];
 let idCounter = 1;
 
-router.post('/', (req, res) => {              // route post me permet de creer une demande
+router.post('/', authMiddleware(),(req, res) => {              // route post me permet de creer une demande
   console.log("Body reçu :", req.body);       // <-- ça va afficher dans le terminal ce que Postman envoie
 
   const { prenom, nom, sexe, handicap, type } = req.body;
@@ -71,7 +73,7 @@ router.put('/:id',(req,res)=>{       // cette route me permet de modifier une de
 
 });
 
-router.delete('/:id',(req,res)=>{
+router.delete('/:id',authMiddleware(),(req,res)=>{
   const id=parseInt(req.params.id);
   const chercherId=tableauDemandes.find(x=>x.id===id);
   if(!chercherId){
