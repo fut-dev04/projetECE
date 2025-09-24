@@ -5,82 +5,55 @@
 // DELETE/:id-->supprimer une demande
 
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../models/modelUser');
+
 const router = express.Router();
-const Model=require('../models/model');
-const authMiddleware=require("../middlewares/middlewareConnexion");
 
-
-
-let tableauDemandes = [];
+let users = [];
 let idCounter = 1;
+const SECRET = "mon_secret"; 
 
-router.post('/', authMiddleware(),(req, res) => {              // route post me permet de creer une demande
-  console.log("Body reçu :", req.body);       // <-- ça va afficher dans le terminal ce que Postman envoie
+//  Inscription
+router.post('/inscription', async (req, res) => {
+  const { username, password, role } = req.body;
 
-  const { prenom, nom, sexe, handicap, type } = req.body;
-
-  // Si le body est vide --> erreur
-  if (!prenom || !nom || !sexe || !handicap || !type) {
-    return res.status(400).json({ error: 'Tous les champs doivent être obligatoires' });
+  if (!username || !password) {
+    return res.status(400).json({ error: "Champs manquants" });
   }
 
-  const nouvelleDemande = new Model(
-    idCounter++,
-    prenom,
-    nom,
-    sexe,
-    handicap,
-    type
-  );
+  // Hash du mot de passe
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  tableauDemandes.push(nouvelleDemande);
-  const io=req.app.get('io');
-  io.emit('nouvelleDemande',nouvelleDemande);
-  res.status(201).json(nouvelleDemande);
+  const user = new User(idCounter++, username, hashedPassword, role || "user");
+  users.push(user);
+
+  res.status(201).json({
+    message: "Utilisateur créé",
+    user: { id: user.id, username: user.username, role: user.role }
+  });
 });
 
-router.get('/', (req, res) => {        //route get me permet de recuperer les demandes
-  res.json(tableauDemandes);
-});
+//  Connexion
+router.post('/connexion', async (req, res) => {
+  const { username, password } = req.body;
 
-router.get('/:id',(req,res)=>{   //cette route nous permet de recuperer une demande par son id
-  const recupererId=parseInt(req.params.id);
-  const chercherId=tableauDemandes.find(x=>x.id===recupererId);
-  if(chercherId){
-    res.json(chercherId);
-  }else{
-    res.status(404).json({message:"Cette id n'existe pas"});
-  }
-});
+  const user = users.find(u => u.username === username);
+  if (!user) return res.status(401).json({ error: "Utilisateur non trouvé" });
 
-router.put('/:id',(req,res)=>{       // cette route me permet de modifier une demande par son id
-  const id=parseInt(req.params.id);
-  const chercherIndex=tableauDemandes.findIndex(x=>x.id===id);
-  if(chercherIndex!==-1){
-    tableauDemandes[chercherIndex]={
-      ...tableauDemandes[chercherIndex],
-      prenom:req.body.prenom || tableauDemandes[chercherIndex].prenom,
-      nom:req.body.nom || tableauDemandes[chercherIndex].nom,
-      sexe:req.body.sexe || tableauDemandes[chercherIndex].sexe,
-      handicap:req.body.handicap || tableauDemandes[chercherIndex].handicap,
-      type:req.body.type || tableauDemandes[chercherIndex].type,
-      date: new Date().toLocaleString('fr-FR',{timeZone:'Africa/Dakar'})
-    };
-    res.json(tableauDemandes[chercherIndex]);
-}else{
-  res.status(404).json({message:'Demande non trouvée'});
-}
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ error: "Mot de passe incorrect" });
 
-});
+  // Générer un token JWT
+  const token = jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: "1h" });
 
-router.delete('/:id',authMiddleware(),(req,res)=>{
-  const id=parseInt(req.params.id);
-  const chercherId=tableauDemandes.find(x=>x.id===id);
-  if(!chercherId){
-    return res.status(404).json({message:'Demande non trouvée'});
-  }
-  tableauDemandes=tableauDemandes.filter(x=>x.id !==id); 
-  res.json(chercherId);     
+  //  Retourner aussi les infos de l'utilisateur
+  res.json({
+    message: "Connexion réussie",
+    token,
+    user: { id: user.id, username: user.username, role: user.role }
+  });
 });
 
 module.exports = router;

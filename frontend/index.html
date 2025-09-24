@@ -7,45 +7,65 @@
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="app.js"></script>
   <link rel="stylesheet" href="style.css">
-  
 </head>
 <body ng-controller="DemandeController">
 
-  <h1>📋 Liste des demandes</h1>
+  <h1>📋 Gestion des demandes</h1>
 
-  <!-- Formulaire pour ajouter / modifier une demande -->
-  <form ng-submit="ajouterDemande()">
-    <input type="text" ng-model="nouvelleDemande.prenom" placeholder="Prénom" required>
-    <input type="text" ng-model="nouvelleDemande.nom" placeholder="Nom" required>
-    <select ng-model="nouvelleDemande.sexe" required>
-      <option value="">Sexe </option>
-      <option value="M">Masculin</option>
-      <option value="F">Féminin</option>
+  <!-- Connexion -->
+  <div ng-if="!isLoggedIn">
+    <h3>Connexion</h3>
+    <form ng-submit="login()">
+      <input type="text" ng-model="loginData.username" placeholder="Nom d'utilisateur" required>
+      <input type="password" ng-model="loginData.password" placeholder="Mot de passe" required>
+      <button type="submit">Se connecter</button>
+    </form>
+  </div>
+
+  <!-- Si connecté -->
+  <div ng-if="isLoggedIn">
+    <p>Connecté en tant que <strong>{{currentUser.username}}</strong> ({{currentUser.role}})
+      <button ng-click="logout()">Déconnexion</button>
+    </p>
+
+    <!-- Formulaire ajout / modification -->
+    <form ng-submit="ajouterDemande()">
+      <input type="text" ng-model="nouvelleDemande.prenom" placeholder="Prénom" required>
+      <input type="text" ng-model="nouvelleDemande.nom" placeholder="Nom" required>
+      <select ng-model="nouvelleDemande.sexe" required>
+        <option value="">-- Sexe --</option>
+        <option value="M">Masculin</option>
+        <option value="F">Féminin</option>
+      </select>
+      <input type="text" ng-model="nouvelleDemande.handicap" placeholder="Handicap" required>
+      <input type="text" ng-model="nouvelleDemande.type" placeholder="Type" required>
       
-    </select>
-    <input type="text" ng-model="nouvelleDemande.handicap" placeholder="Handicap" required>
-    <input type="text" ng-model="nouvelleDemande.type" placeholder="Type" required>
-    
-    <button type="submit">
-      {{ nouvelleDemande.id ? "Modifier" : "Ajouter" }}
-    </button>
-    <button type="button" ng-click="resetForm()" ng-if="nouvelleDemande.id">Annuler</button>
-  </form>
+      <button type="submit">{{ nouvelleDemande.id ? "Modifier" : "Ajouter" }}</button>
+      <button type="button" ng-click="resetForm()" ng-if="nouvelleDemande.id">Annuler</button>
+    </form>
 
-  <hr>
+    <hr>
 
-  <!-- Affichage de la liste -->
-  <ul>
-    <li ng-repeat="demande in demandes">
-      <strong>#{{demande.id}}</strong> - {{demande.prenom}} {{demande.nom}}
-      ({{demande.sexe}}, {{demande.handicap}}, {{demande.type}})
-      <em>[{{demande.date}}]</em>
+    <!-- Liste des demandes -->
+    <ul>
+      <li ng-repeat="demande in demandes">
+        <strong>#{{demande.id}}</strong> - {{demande.prenom}} {{demande.nom}}
+        ({{demande.sexe}}, {{demande.handicap}}, {{demande.type}})
+        <em>[{{demande.date}}] - Statut: {{demande.statut}}</em>
 
-      <!-- Boutons action -->
-      <button ng-click="supprimerDemande(demande.id)">🗑 Supprimer</button>
-      <button ng-click="editerDemande(demande)">✏ Modifier</button>
-    </li>
-  </ul>
+        <!-- Boutons user -->
+        <button ng-click="editerDemande(demande)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">✏ Modifier</button>
+        <button ng-click="supprimerDemande(demande.id)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">🗑 Supprimer </button>
+
+        <!-- Boutons admin pour changer le statut -->
+        <div ng-if="currentUser.role === 'admin'">
+          <button ng-click="changerStatut(demande, 'en_attente')">🕓 Remettre en attente</button>
+          <button ng-click="changerStatut(demande, 'en_cours')">⚙ En cours</button>
+          <button ng-click="changerStatut(demande, 'traitee')">✅ Traitée</button>
+        </div>
+      </li>
+    </ul>
+  </div>
 
 </body>
 </html>

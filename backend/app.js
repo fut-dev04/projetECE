@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 const demandesRoutes = require('./routes/route'); 
 app.use('/route', demandesRoutes);
 
-const connexionRoute=require('../routes/connexion');
+const connexionRoute=require('./routes/connexion');
 app.use('connexion',connexionRoute);
 
 app.use(express.static(path.join(__dirname, '../frontend')));
