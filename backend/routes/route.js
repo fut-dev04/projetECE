@@ -5,55 +5,107 @@
 // DELETE/:id-->supprimer une demande
 
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const User = require('../models/modelUser');
+const Model = require('../models/model');
+const authMiddleware = require('../middlewares/middlewareConnexion');
 
 const router = express.Router();
 
-let users = [];
+let tableauDemandes = [];
 let idCounter = 1;
-const SECRET = "mon_secret"; 
 
-//  Inscription
-router.post('/inscription', async (req, res) => {
-  const { username, password, role } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: "Champs manquants" });
+// Ajouter une demande
+router.post('/', authMiddleware(), (req, res) => {
+  const { prenom, nom, sexe, handicap, type } = req.body;
+  if (!prenom || !nom || !sexe || !handicap || !type) {
+    return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
   }
 
-  // Hash du mot de passe
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const nouvelleDemande = new Model(idCounter++, prenom, nom, sexe, handicap, type, req.user.id);
+  tableauDemandes.push(nouvelleDemande);
 
-  const user = new User(idCounter++, username, hashedPassword, role || "user");
-  users.push(user);
+  req.app.get('io').emit('nouvelleDemande', nouvelleDemande);
 
-  res.status(201).json({
-    message: "Utilisateur créé",
-    user: { id: user.id, username: user.username, role: user.role }
-  });
+  res.status(201).json(nouvelleDemande);
 });
 
-//  Connexion
-router.post('/connexion', async (req, res) => {
-  const { username, password } = req.body;
+// Récupérer toutes les demandes
+router.get('/', authMiddleware(), (req, res) => {
+  res.json(tableauDemandes);
+});
 
-  const user = users.find(u => u.username === username);
-  if (!user) return res.status(401).json({ error: "Utilisateur non trouvé" });
+// Récupérer une demande précise
+router.get('/:id', authMiddleware(), (req, res) => {
+  const id = parseInt(req.params.id);
+  const demande = tableauDemandes.find(d => d.id === id);
+  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+  res.json(demande);
+});
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ error: "Mot de passe incorrect" });
+// Modifier une demande
+router.put('/:id', authMiddleware(), (req, res) => {
+  const id = parseInt(req.params.id);
+  const demande = tableauDemandes.find(d => d.id === id);
+  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
 
-  // Générer un token JWT
-  const token = jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: "1h" });
+  if (req.user.role !== "admin") {
+    if (demande.userId !== req.user.id) {
+      return res.status(403).json({ error: "Vous ne pouvez modifier que vos propres demandes" });
+    }
+    if (demande.statut !== "en_attente") {
+      return res.status(403).json({ error: "Impossible de modifier une demande en cours de traitement" });
+    }
+  }
 
-  //  Retourner aussi les infos de l'utilisateur
-  res.json({
-    message: "Connexion réussie",
-    token,
-    user: { id: user.id, username: user.username, role: user.role }
-  });
+  demande.prenom = req.body.prenom || demande.prenom;
+  demande.nom = req.body.nom || demande.nom;
+  demande.sexe = req.body.sexe || demande.sexe;
+  demande.handicap = req.body.handicap || demande.handicap;
+  demande.type = req.body.type || demande.type;
+  demande.date = new Date().toLocaleString('fr-FR',{timeZone:'Africa/Dakar'});
+
+  req.app.get('io').emit('demandeModifiee', demande);
+
+  res.json(demande);
+});
+
+// Supprimer une demande
+router.delete('/:id', authMiddleware(), (req, res) => {
+  const id = parseInt(req.params.id);
+  const demande = tableauDemandes.find(d => d.id === id);
+  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+
+  if (req.user.role !== "admin") {
+    if (demande.userId !== req.user.id) {
+      return res.status(403).json({ error: "Vous ne pouvez supprimer que vos propres demandes" });
+    }
+    if (demande.statut !== "en_attente") {
+      return res.status(403).json({ error: "Impossible de supprimer une demande en cours de traitement" });
+    }
+  }
+
+  tableauDemandes = tableauDemandes.filter(d => d.id !== id);
+
+  req.app.get('io').emit('demandeSupprimee', id);
+
+  res.json({ message: "Demande supprimée", demande });
+});
+
+// Changer le statut (admin)
+router.put('/:id/statut', authMiddleware("admin"), (req, res) => {
+  const id = parseInt(req.params.id);
+  const demande = tableauDemandes.find(d => d.id === id);
+  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+
+  const { statut } = req.body;
+  if (!statut || !["en_attente", "en_cours", "traitee"].includes(statut)) {
+    return res.status(400).json({ error: "Statut invalide" });
+  }
+
+  demande.statut = statut;
+
+  req.app.get('io').emit('statutChange', demande);
+
+  res.json({ message: "Statut mis à jour", demande });
 });
 
 module.exports = router;

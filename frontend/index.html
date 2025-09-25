@@ -26,6 +26,9 @@
   <div ng-if="isLoggedIn">
     <p>Connecté en tant que <strong>{{currentUser.username}}</strong> ({{currentUser.role}})
       <button ng-click="logout()">Déconnexion</button>
+      <span ng-if="currentUser.role === 'admin'">
+        | <a href="/admin">🔑 Espace Admin</a>
+      </span>
     </p>
 
     <!-- Formulaire ajout / modification -->
@@ -53,16 +56,8 @@
         ({{demande.sexe}}, {{demande.handicap}}, {{demande.type}})
         <em>[{{demande.date}}] - Statut: {{demande.statut}}</em>
 
-        <!-- Boutons user -->
         <button ng-click="editerDemande(demande)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">✏ Modifier</button>
-        <button ng-click="supprimerDemande(demande.id)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">🗑 Supprimer </button>
-
-        <!-- Boutons admin pour changer le statut -->
-        <div ng-if="currentUser.role === 'admin'">
-          <button ng-click="changerStatut(demande, 'en_attente')">🕓 Remettre en attente</button>
-          <button ng-click="changerStatut(demande, 'en_cours')">⚙ En cours</button>
-          <button ng-click="changerStatut(demande, 'traitee')">✅ Traitée</button>
-        </div>
+        <button ng-click="supprimerDemande(demande.id)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">🗑 Supprimer</button>
       </li>
     </ul>
   </div>

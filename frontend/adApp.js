@@ -1,13 +1,10 @@
-const app = angular.module("demandeApp", []);
+const app = angular.module("adminApp", []);
 
-app.controller("DemandeController", function($scope, $http) {
+app.controller("AdminController", function($scope, $http) {
   const API_URL = "http://localhost:4000";
   const socket = io("http://localhost:4000");
 
   $scope.demandes = [];
-  $scope.nouvelleDemande = {};
-  $scope.loginData = {};
-  $scope.isLoggedIn = false;
   $scope.currentUser = {};
 
   // Charger toutes les demandes
@@ -17,95 +14,55 @@ app.controller("DemandeController", function($scope, $http) {
     });
   }
 
-  // Vérifier si déjà connecté (token dans localStorage)
+  // Vérifier si connecté et admin
   function checkLogin() {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
 
     if (token && user) {
-      $scope.isLoggedIn = true;
       $scope.currentUser = JSON.parse(user);
-
       $http.defaults.headers.common["Authorization"] = "Bearer " + token;
+
+      if ($scope.currentUser.role !== "admin") {
+        alert("Accès réservé aux administrateurs !");
+        window.location.href = "/";
+        return;
+      }
+
       chargerDemandes();
+    } else {
+      alert("Veuillez vous connecter d’abord !");
+      window.location.href = "/";
     }
   }
-
-  // Connexion
-  $scope.login = function() {
-    $http.post(API_URL + "/auth/connexion", $scope.loginData).then(res => {
-      const token = res.data.token;
-
-      // On récupère le vrai rôle depuis le backend
-      $scope.currentUser = res.data.user;
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      $scope.isLoggedIn = true;
-      $http.defaults.headers.common["Authorization"] = "Bearer " + token;
-
-      $scope.loginData = {};
-      chargerDemandes();
-    }, err => {
-      alert("Erreur de connexion: " + err.data.error);
-    });
-  };
 
   // Déconnexion
   $scope.logout = function() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    $scope.isLoggedIn = false;
-    $scope.currentUser = {};
-    $scope.demandes = [];
     delete $http.defaults.headers.common["Authorization"];
+    window.location.href = "/";
   };
 
-  //  Ajouter ou modifier une demande
-  $scope.ajouterDemande = function() {
-    if ($scope.nouvelleDemande.id) {
-      // Modification
-      $http.put(API_URL + "/route/" + $scope.nouvelleDemande.id, $scope.nouvelleDemande).then(res => {
-        const index = $scope.demandes.findIndex(d => d.id === res.data.id);
-        if (index !== -1) $scope.demandes[index] = res.data;
-        $scope.nouvelleDemande = {};
-      });
-    } else {
-      // Création
-      $http.post(API_URL + "/route", $scope.nouvelleDemande).then(res => {
-        $scope.nouvelleDemande = {};
-      });
-    }
-  };
-
-  // Supprimer
+  // Supprimer une demande
   $scope.supprimerDemande = function(id) {
     $http.delete(API_URL + "/route/" + id).then(res => {
       $scope.demandes = $scope.demandes.filter(d => d.id !== id);
-    }, err => {
-      alert(err.data.error || "Suppression refusée.");
+    }, err => { 
+      alert(err.data.error || "Erreur suppression"); 
     });
   };
 
-  // Préparer l'édition
-  $scope.editerDemande = function(demande) {
-    $scope.nouvelleDemande = angular.copy(demande);
-  };
-
-  // Réinitialiser le formulaire
-  $scope.resetForm = function() {
-    $scope.nouvelleDemande = {};
-  };
-
-  // Changer statut (admin uniquement)
+  // Changer statut
   $scope.changerStatut = function(demande, nouveauStatut) {
     $http.put(API_URL + "/route/" + demande.id + "/statut", { statut: nouveauStatut }).then(res => {
       const index = $scope.demandes.findIndex(d => d.id === res.data.demande.id);
       if (index !== -1) $scope.demandes[index] = res.data.demande;
-    }, err => {
-      alert(err.data.error || "Impossible de changer le statut.");
+    }, err => { 
+      alert(err.data.error || "Erreur changement statut"); 
     });
   };
+
 
   // Nouvelle demande
   socket.on("nouvelleDemande", (data) => {

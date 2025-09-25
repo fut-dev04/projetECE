@@ -18,11 +18,15 @@ const demandesRoutes = require('./routes/route');
 app.use('/route', demandesRoutes);
 
 const connexionRoute=require('./routes/connexion');
-app.use('connexion',connexionRoute);
+app.use('/auth',connexionRoute);
 
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.get(/.*/,(req,res)=>{
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+app.get('/admin',(req,res)=>{
+  res.sendFile(path.join(__dirname, '..frontend/admin.html'));
 });
 
 module.exports = app;

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr" ng-app="adminApp">
+<head>
+  <meta charset="UTF-8">
+  <title>Administration - Gestion des Demandes</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="adminApp.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body ng-controller="AdminController">
+
+  <h1>👨‍💼 Espace Administration</h1>
+
+  <p>
+    Connecté en tant que <strong>{{currentUser.username}}</strong> ({{currentUser.role}})
+    <button ng-click="logout()">Déconnexion</button>
+    <a href="/">⬅ Retour au site</a>
+  </p>
+
+  <hr>
+
+  <!-- Liste des demandes -->
+  <ul>
+    <li ng-repeat="demande in demandes">
+      <strong>#{{demande.id}}</strong> - {{demande.prenom}} {{demande.nom}}
+      ({{demande.sexe}}, {{demande.handicap}}, {{demande.type}})
+      <em>[{{demande.date}}] - Statut: {{demande.statut}}</em>
+
+      <button ng-click="supprimerDemande(demande.id)">🗑 Supprimer</button>
+      <button ng-click="changerStatut(demande, 'en_attente')">🕓 Attente</button>
+      <button ng-click="changerStatut(demande, 'en_cours')">⚙ En cours</button>
+      <button ng-click="changerStatut(demande, 'traitee')">✅ Traitée</button>
+    </li>
+  </ul>
+
+</body>
+</html>
