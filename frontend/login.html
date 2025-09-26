@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr" ng-app="demandeApp">
+<head>
+<meta charset="UTF-8">
+<title>Connexion - Gestion des Demandes</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="app.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body ng-controller="DemandeController">
+
+<h1>📋 Gestion des demandes</h1>
+
+<!-- Connexion -->
+<div ng-if="!isLoggedIn">
+<h3>Connexion</h3>
+<form ng-submit="login()">
+<input type="text" ng-model="loginData.username" placeholder="Nom d'utilisateur" required>
+<input type="password" ng-model="loginData.password" placeholder="Mot de passe" required>
+<button type="submit">Se connecter</button>
+</form>
+<p>Pas encore de compte ? <a href="/register">📝 S’inscrire</a></p>
+</div>
+
+<!-- Si connecté -->
+<div ng-if="isLoggedIn">
+<p>
+Connecté en tant que <strong>{{currentUser.username}}</strong> ({{currentUser.role}})
+<button ng-click="logout()">Déconnexion</button>
+<span ng-if="currentUser.role === 'admin'">
+| <a href="/admin">🔑 Espace Admin</a>
+</span>
+</p>
+
+<!-- Formulaire ajout / modification -->
+<form ng-submit="ajouterDemande()">
+<input type="text" ng-model="nouvelleDemande.prenom" placeholder="Prénom" required>
+<input type="text" ng-model="nouvelleDemande.nom" placeholder="Nom" required>
+<select ng-model="nouvelleDemande.sexe" required>
+<option value="">-- Sexe --</option>
+<option value="M">Masculin</option>
+<option value="F">Féminin</option>
+</select>
+<input type="text" ng-model="nouvelleDemande.handicap" placeholder="Handicap" required>
+<input type="text" ng-model="nouvelleDemande.type" placeholder="Type" required>
+
+<button type="submit">{{ nouvelleDemande.id ? "Modifier" : "Ajouter" }}</button>
+<button type="button" ng-click="resetForm()" ng-if="nouvelleDemande.id">Annuler</button>
+</form>
+
+<hr>
+
+<!-- Liste des demandes -->
+<ul>
+<li ng-repeat="demande in demandes">
+<strong>#{{demande.id}}</strong> - {{demande.prenom}} {{demande.nom}}
+({{demande.sexe}}, {{demande.handicap}}, {{demande.type}})
+<em>[{{demande.date}}] - Statut: {{demande.statut}}</em>
+
+<!-- Boutons user -->
+<button ng-click="editerDemande(demande)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">✏ Modifier</button>
+<button ng-click="supprimerDemande(demande.id)" ng-disabled="demande.statut !== 'en_attente' && currentUser.role !== 'admin'">🗑 Supprimer</button>
+</li>
+</ul>
+</div>
+
+</body>
+</html>

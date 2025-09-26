@@ -13,99 +13,114 @@ const router = express.Router();
 let tableauDemandes = [];
 let idCounter = 1;
 
-// Ajouter une demande
+// POST → Ajouter une demande
 router.post('/', authMiddleware(), (req, res) => {
-  const { prenom, nom, sexe, handicap, type } = req.body;
-  if (!prenom || !nom || !sexe || !handicap || !type) {
-    return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
-  }
+const { prenom, nom, sexe, handicap, type } = req.body;
 
-  const nouvelleDemande = new Model(idCounter++, prenom, nom, sexe, handicap, type, req.user.id);
-  tableauDemandes.push(nouvelleDemande);
+if (!prenom || !nom || !sexe || !handicap || !type) {
+return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
+}
 
-  req.app.get('io').emit('nouvelleDemande', nouvelleDemande);
+const nouvelleDemande = new Model(
+idCounter++,
+prenom,
+nom,
+sexe,
+handicap,
+type,
+req.user.id
+);
 
-  res.status(201).json(nouvelleDemande);
+tableauDemandes.push(nouvelleDemande);
+
+// 🔔 Émettre en temps réel via Socket.IO
+const io = req.app.get('io');
+io.emit('nouvelleDemande', nouvelleDemande);
+
+res.status(201).json(nouvelleDemande);
 });
 
-// Récupérer toutes les demandes
+// GET → Voir toutes les demandes
 router.get('/', authMiddleware(), (req, res) => {
-  res.json(tableauDemandes);
+res.json(tableauDemandes);
 });
 
-// Récupérer une demande précise
+// GET/:id → Voir une demande précise
 router.get('/:id', authMiddleware(), (req, res) => {
-  const id = parseInt(req.params.id);
-  const demande = tableauDemandes.find(d => d.id === id);
-  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
-  res.json(demande);
+const id = parseInt(req.params.id);
+const demande = tableauDemandes.find(d => d.id === id);
+
+if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+res.json(demande);
 });
 
-// Modifier une demande
+// PUT/:id → Modifier une demande
 router.put('/:id', authMiddleware(), (req, res) => {
-  const id = parseInt(req.params.id);
-  const demande = tableauDemandes.find(d => d.id === id);
-  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+const id = parseInt(req.params.id);
+const index = tableauDemandes.findIndex(d => d.id === id);
 
-  if (req.user.role !== "admin") {
-    if (demande.userId !== req.user.id) {
-      return res.status(403).json({ error: "Vous ne pouvez modifier que vos propres demandes" });
-    }
-    if (demande.statut !== "en_attente") {
-      return res.status(403).json({ error: "Impossible de modifier une demande en cours de traitement" });
-    }
-  }
+if (index === -1) return res.status(404).json({ message: "Demande non trouvée" });
 
-  demande.prenom = req.body.prenom || demande.prenom;
-  demande.nom = req.body.nom || demande.nom;
-  demande.sexe = req.body.sexe || demande.sexe;
-  demande.handicap = req.body.handicap || demande.handicap;
-  demande.type = req.body.type || demande.type;
-  demande.date = new Date().toLocaleString('fr-FR',{timeZone:'Africa/Dakar'});
+const demande = tableauDemandes[index];
 
-  req.app.get('io').emit('demandeModifiee', demande);
+// Vérification des droits
+if (req.user.role !== "admin" && demande.userId !== req.user.id) {
+return res.status(403).json({ error: "Accès interdit" });
+}
 
-  res.json(demande);
+// L’utilisateur normal ne peut modifier que si la demande est encore en attente
+if (req.user.role !== "admin" && demande.statut !== "en_attente") {
+return res.status(403).json({ error: "Vous ne pouvez pas modifier cette demande car elle est déjà en cours/traitée." });
+}
+
+tableauDemandes[index] = {
+...demande,
+prenom: req.body.prenom || demande.prenom,
+nom: req.body.nom || demande.nom,
+sexe: req.body.sexe || demande.sexe,
+handicap: req.body.handicap || demande.handicap,
+type: req.body.type || demande.type,
+date: new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Dakar' })
+};
+
+res.json(tableauDemandes[index]);
 });
 
-// Supprimer une demande
+// DELETE/:id → Supprimer une demande
 router.delete('/:id', authMiddleware(), (req, res) => {
-  const id = parseInt(req.params.id);
-  const demande = tableauDemandes.find(d => d.id === id);
-  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+const id = parseInt(req.params.id);
+const demande = tableauDemandes.find(d => d.id === id);
 
-  if (req.user.role !== "admin") {
-    if (demande.userId !== req.user.id) {
-      return res.status(403).json({ error: "Vous ne pouvez supprimer que vos propres demandes" });
-    }
-    if (demande.statut !== "en_attente") {
-      return res.status(403).json({ error: "Impossible de supprimer une demande en cours de traitement" });
-    }
-  }
+if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
 
-  tableauDemandes = tableauDemandes.filter(d => d.id !== id);
+// Vérification des droits
+if (req.user.role !== "admin" && demande.userId !== req.user.id) {
+return res.status(403).json({ error: "Accès interdit" });
+}
 
-  req.app.get('io').emit('demandeSupprimee', id);
+// L’utilisateur normal ne peut supprimer que si la demande est encore en attente
+if (req.user.role !== "admin" && demande.statut !== "en_attente") {
+return res.status(403).json({ error: "Vous ne pouvez pas supprimer cette demande car elle est déjà en cours/traitée." });
+}
 
-  res.json({ message: "Demande supprimée", demande });
+tableauDemandes = tableauDemandes.filter(d => d.id !== id);
+res.json({ message: "Demande supprimée", demande });
 });
 
-// Changer le statut (admin)
+// PUT/:id/statut → Changer le statut (réservé aux admins)
 router.put('/:id/statut', authMiddleware("admin"), (req, res) => {
-  const id = parseInt(req.params.id);
-  const demande = tableauDemandes.find(d => d.id === id);
-  if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
+const id = parseInt(req.params.id);
+const { statut } = req.body;
 
-  const { statut } = req.body;
-  if (!statut || !["en_attente", "en_cours", "traitee"].includes(statut)) {
-    return res.status(400).json({ error: "Statut invalide" });
-  }
+const demande = tableauDemandes.find(d => d.id === id);
+if (!demande) return res.status(404).json({ message: "Demande non trouvée" });
 
-  demande.statut = statut;
+demande.statut = statut;
 
-  req.app.get('io').emit('statutChange', demande);
+const io = req.app.get('io');
+io.emit('majStatut', demande);
 
-  res.json({ message: "Statut mis à jour", demande });
+res.json({ message: "Statut mis à jour", demande });
 });
 
 module.exports = router;

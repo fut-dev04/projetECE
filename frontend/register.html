@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Inscription</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+<script src="registerApp.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body ng-app="registerApp" ng-controller="RegisterController">
+
+<h1>📝 Inscription</h1>
+<form ng-submit="register()">
+<input type="text" ng-model="user.username" placeholder="Nom d'utilisateur" required>
+<input type="password" ng-model="user.password" placeholder="Mot de passe" required>
+<select ng-model="user.role">
+<option value="user" selected>Utilisateur</option>
+<option value="admin">Administrateur</option>
+</select>
+<button type="submit">S’inscrire</button>
+</form>
+
+<p><a href="/">⬅ Retour</a></p>
+
+</body>
+</html>

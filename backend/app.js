@@ -20,13 +20,34 @@ app.use('/route', demandesRoutes);
 const connexionRoute=require('./routes/connexion');
 app.use('/auth',connexionRoute);
 
-app.use(express.static(path.join(__dirname, '../frontend')));
-app.get(/.*/,(req,res)=>{
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+//page d'accueil 
+app.get('/',(req,res)=>{
+  const filePath=path.resolve(__dirname, '..frontend/home.html');
+  // res.sendFile(path.resolve(__dirname, '..frontend/home.html'));
+  console.log("envoi du fichier: ",filePath);
+  res.sendFile(filePath);
 });
 
-app.get('/admin',(req,res)=>{
-  res.sendFile(path.join(__dirname, '..frontend/admin.html'));
+//page de connexion
+app.get('/login',(req,res)=>{
+  res.sendFile(path.resolve(__dirname, '..frontend/login.html'));
 });
+
+//page d'inscription
+app.get('/register',(req,res)=>{
+  res.sendFile(path.resolve(__dirname, '..frontend/register.html'));
+});
+
+//page d'admin
+app.get('/admin',(req,res)=>{
+  res.sendFile(path.resolve(__dirname, '..frontend/admin.html'));
+});
+
+app.use(express.static(path.resolve(__dirname, '../frontend')));
+// app.get(/.*/,(req,res)=>{
+//   res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// });
+
+
 
 module.exports = app;
