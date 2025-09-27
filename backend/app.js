@@ -22,7 +22,7 @@ app.use('/auth',connexionRoute);
 
 //page d'accueil 
 app.get('/',(req,res)=>{
-  const filePath=path.resolve(__dirname, '..frontend/home.html');
+  const filePath=path.resolve(__dirname, '../frontend/home.html');
   // res.sendFile(path.resolve(__dirname, '..frontend/home.html'));
   console.log("envoi du fichier: ",filePath);
   res.sendFile(filePath);
@@ -30,17 +30,17 @@ app.get('/',(req,res)=>{
 
 //page de connexion
 app.get('/login',(req,res)=>{
-  res.sendFile(path.resolve(__dirname, '..frontend/login.html'));
+  res.sendFile(path.resolve(__dirname, '../frontend/login.html'));
 });
 
 //page d'inscription
 app.get('/register',(req,res)=>{
-  res.sendFile(path.resolve(__dirname, '..frontend/register.html'));
+  res.sendFile(path.resolve(__dirname, '../frontend/register.html'));
 });
 
 //page d'admin
 app.get('/admin',(req,res)=>{
-  res.sendFile(path.resolve(__dirname, '..frontend/admin.html'));
+  res.sendFile(path.resolve(__dirname, '../frontend/admin.html'));
 });
 
 app.use(express.static(path.resolve(__dirname, '../frontend')));

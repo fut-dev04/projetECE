@@ -110,7 +110,11 @@ app.controller("DemandeController", function($scope, $http) {
   // Nouvelle demande
   socket.on("nouvelleDemande", (data) => {
     $scope.$apply(() => {
-      $scope.demandes.push(data);
+      //on affiche seulement si c'est un une demande de l'utilisateur courant ou si c'est un admin
+      if($scope.currentUser.role==="admin" || data.userId===$scope.currentUser.id){
+        $scope.demandes.push(data);
+      }
+      
     });
   });
 
