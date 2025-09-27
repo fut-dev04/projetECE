@@ -1,5 +1,5 @@
 function DemandeSocket(io){
-    io.on('connect',(socket)=>{
+    io.on('connection',(socket)=>{
         console.log("Un client s'est connecté(e)!", socket.id);
 
         socket.on('message',(msg)=>{

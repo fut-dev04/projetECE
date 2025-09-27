@@ -16,7 +16,7 @@ if (!username || !password) return res.status(400).json({ error: "Champs manquan
 
 //verifier si username existe déjà
 const exist=users.find(u=>u.username===username);
-if(exist)returnres.status(400).json({error: "Ce nom d'utilisateur est déjà pris!"});
+if (exist) return res.status(400).json({error: "Ce nom d'utilisateur est déjà pris!"});
 
 const hashedPassword = await bcrypt.hash(password, 10);
 const user = new User(idCounter++, username, hashedPassword, role || "user");

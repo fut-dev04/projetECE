@@ -33,7 +33,7 @@ router.post('/', authMiddleware(), (req, res) => {
 
   tableauDemandes.push(nouvelleDemande);
 
-  // 🔔 Émettre uniquement aux admins
+  //  Émettre uniquement aux admins
   const io = req.app.get('io');
   io.emit('nouvelleDemande', nouvelleDemande);
 
